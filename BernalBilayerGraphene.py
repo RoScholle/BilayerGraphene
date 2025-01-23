@@ -3,11 +3,10 @@ import scipy as sp
 import scipy.optimize as opt
 import sys
 
-# In[573]:
 
 
-N_x = int(sys.argv[1])           #Number of sites in x-direction of the square lattice
-N_y = int(sys.argv[2])            #Number of sites in y-direction of the square lattice
+N_x = int(sys.argv[1])           #Number of unit cells in x-direction of the underlying triangular lattice
+N_y = int(sys.argv[2])            #Number of unit cells in y-direction of the underlying triangular lattice
 
 t = 1.             #hopping strength. We recommend to set this to 1 and view it as an energy scale.
 t_perp =  0.381/3.16      #nearest neighbour hopping strength.
@@ -25,31 +24,21 @@ Periodic_Boundaries = True #Apply periodic boundaries in x-direction
 Displacement_Field =  float(sys.argv[6])
 
 
-# In[574]:
 
 
-#From these, we calculate useful helping variables, i.e temperature T, number of sites N_tot and the Doping
+#From these, we calculate useful helping variables, i.e inverse temperature beta, number of sites N_tot and the Doping
 
-N_tot = 4*N_x*N_y
+N_tot = 4*N_x*N_y #Because there are 4 sites in a BBG unit cell
 Doping = 1-n_filling
 if(T==0):
     beta = np.infty
 else:
     beta = 1./T
-    
 
-
-# In[575]:
-
-
-n_filling*N_x*N_y
-
-
-# In[577]:
 
 
 #We then construct the non-interacting(!) Hamiltonian H_0. In this code, this is done for the 
-#non-interacting part of the Hubbard Hamiltonian on a square lattice with optional periodic boundaries 
+#non-interacting part of the Hubbard Hamiltonian on a hexagonal lattice with optional periodic boundaries 
 #and an optional magnetic field.
 #The code can be extended by replacing the matrix H_0 by a different matrix H_0 for a different model, e.g
 #by adding additional next-to nearest neighbor hopping terms to the Hamiltonian. Note that t_prime only enters the
@@ -64,11 +53,11 @@ H_0 = np.zeros([2*N_tot,2*N_tot],dtype = "complex") #This is the form of the Ham
 
 
 QuantumNumbers = []     #We can see this as the labels of the rows and columns of the Hamiltonian.
-                        #We can with this write a single index insead of (x,y,s).
+                        #We can with this write a single index insead of (x,y,v,s).
 
 for i in range(N_y):            #The order of these loops matters, because this way we enumerate the sites
     for j in range(N_x):        #from left to right an THEN from low to up. 
-        for v in [0,1,2,3]:     #We label the 4 site in the unit cell
+        for v in [0,1,2,3]:     #We label the 4 site in the BBG unit cell
             for s in (1,-1):    #We label up spins with 1 and down spins with -1.
                 QuantumNumbers.append([j,i,v,s]) 
 
@@ -247,7 +236,7 @@ for i in range(2*N_tot):
                     if((v1 == 2 and v2 == 3)):
                         H_0[i,j]+= -t   
                         
-            #Korrigiere noch das Ecke-Ecke Hopping:
+            #Correcting the corner-corner hopping:
             if(x1 == 0 and y1 == N_y-1 and x2 == N_x-1 and y2 == 0):
                 if(s1 == s2):
                     if((v1 == 2 and v2 == 3)):
@@ -259,7 +248,7 @@ for i in range(2*N_tot):
                         H_0[i,j]+= -t
                         
                         
-            ##t_perp braucht keine PBC, darum direkt weiter zu...
+            ##t_perp does not need PBC, so we continue with...
             
             ##t3:
             
@@ -340,23 +329,10 @@ for i in range(2*N_tot):
                     H_0[i,j]-= Displacement_Field/2.   
 
 
-# In[563]:
-
-
-x_coordinate1 = 0
-y_coordinate1 = 0
-v1 = 2
-
-x_coordinate2 = 3
-y_coordinate2 = 3
-v2 = 3
-
-i = 2*(4*(N_x*y_coordinate1 + x_coordinate1) + v1)
-j = 2*(4*(N_x*y_coordinate2 + x_coordinate2) + v2)
 
 
 
-# In[564]:
+
 
 
 #In the following, we define the functions that we will use to perform the self-consistency loop.
@@ -477,26 +453,7 @@ def Next_Gap_Vector(GapVector,GetEnergy=False,ReturnBoth = False,ReturnSpectral 
     return np.real(NewGapVector)
 
 
-##################################################################
 
-
-
-
-#This is a primitive function to plot the spin configuration given a Gapvector.
-#It rotates the spins so that the (0,0) spin points upwards and then plots a cut through the x-y-plane.
-#The arrows point in the direction of the x,y components of the spin, however their length is proportional
-#to the full local spin, not just the x and y component.
-#Since the spins can also have a z-component, this function should be viewed to get a first impression on 
-#how the spins are aranged (in particular, if they ae collinear), not to see the precise pattern.
-
-
-
-# In[568]:
-
-
-
-
-# In[566]:
 
 
 #Here, we finally perform the iteration to let the system converge towards a final order. 
@@ -518,15 +475,8 @@ Energies = np.array([])
 #For higher quality results, especially on bigger lattices, we recommend increasing the 
 #maximum iteration number to e.g. 4000.
 
-#To visualize the iteration process, we additionally plot the inital spin configuration, 
-#the spin configuration after 20 loops and then the spin configuration after every 100 loops.
 for i in range(1000):   
     
-    if(i%20 == 1):  
-        
-        np.save("GapVectors/GapVector_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{}:.6_DispField{:.6}_mitt4_ForPaper.npy".format(N_x,N_y,U,n_filling,T,Displacement_Field),NewGapVector)
-        np.save("Energies/Energies_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{:.6}_DispField{:.6}_mitt4_ForPaper.npy".format(N_x,N_y,U,n_filling,T,Displacement_Field),Energies[-1])
-
 
         
         
@@ -542,19 +492,16 @@ for i in range(1000):
     GapVector = Mixing*GapVector + (1-Mixing)*NewGapVector
 
 
-# In[569]:
 
-np.save("GapVectors/GapVector_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{}:.6_DispField{:.6}_mitt4_ForPaper.npy".format(N_x,N_y,U,n_filling,T,Displacement_Field),NewGapVector)
-np.save("Energies/Energies_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{:.6}_DispField{:.6}_mitt4_ForPaper.npy".format(N_x,N_y,U,n_filling,T,Displacement_Field),Energies[-1])
-np.save("GapVectors/GapVector_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{}:.6_DispField{:.6}_mu_mitt4_ForPaper.npy".format(N_x,N_y,U,n_filling,T,Displacement_Field),mu_new)
-
-# In[ ]:
+np.save("GapVector_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{}:.6_DispField{:.6}_BBG.npy".format(N_x,N_y,U,n_filling,T,Displacement_Field),NewGapVector)
+np.save("Energies_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{:.6}_DispField{:.6}_BBG.npy".format(N_x,N_y,U,n_filling,T,Displacement_Field),Energies[-1])
+np.save("GapVector_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{}:.6_DispField{:.6}_BBG.npy".format(N_x,N_y,U,n_filling,T,Displacement_Field),mu_new)
 
 
 
 
 
-# In[ ]:
+
 
 
 
