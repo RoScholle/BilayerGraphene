@@ -1,3 +1,4 @@
-The codes and data presented here are not in a very readable style. Upon request, I would be glad to provide all relevant rawdata or processed data in the required format. I believe it is easier than to go through the code.
+The Python file "SingleLayerGraphene.py" was used to create data for the plots of single layer graphene. One can simply change the parameters at the top to generate data for a given set of T,n,N_x,N_y,U etc. 
+The same applies for Bernal Bilayer graphene and the code "BBG_MeanField.py".
 
-Otherwise: One can recreate the releant phase diagrams with the jupyter notebook "PhaseDiagram_BBG_Correct_Pixels_Github" or produce new data with the "BBG_MeanField" Python File.
+The generated data from these files is available upon request from r.scholle@fkf.mpg.de. I am very glad for any requests or inquiries concerning the paper and happy to share the rawdata we collected for graphene or BBG.
