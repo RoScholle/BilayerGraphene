@@ -3,11 +3,9 @@ import scipy as sp
 import scipy.optimize as opt
 import sys
 
-# In[573]:
 
-
-N_x = int(sys.argv[1])           #Number of sites in x-direction of the square lattice
-N_y = int(sys.argv[2])            #Number of sites in y-direction of the square lattice
+N_x = int(sys.argv[1])           #Number of unit cells in x-direction of the triangular lattice
+N_y = int(sys.argv[2])            #Number of unit cells in y-direction of the triangular lattice
 
 t = 1.             #hopping strength. We recommend to set this to 1 and view it as an energy scale.
 
@@ -15,17 +13,15 @@ t = 1.             #hopping strength. We recommend to set this to 1 and view it 
 U = float(sys.argv[3])            #local Hubbard U (interaction strength). 3 is a moderate coupling
 
 n_filling = float(sys.argv[4])     #The enforced average filling of the system. n_filling = 1 corresponds to half-filling.
-                    #n_filling = 0.9 corresponds to 10% hole doping.
+                                    #n_filling = 0.9 corresponds to 10% hole doping.
 
 T =  float(sys.argv[5])           #Temperature T. We again recommend to set t=1, so T is in units of t.
 
-Periodic_Boundaries = True #Apply periodic boundaries in x-direction
+Periodic_Boundaries = True #Apply periodic boundaries
 
 
-# In[574]:
 
-
-#From these, we calculate useful helping variables, i.e temperature T, number of sites N_tot and the Doping
+#From these, we calculate useful helping variables, i.e inverse temperature beta, number of sites N_tot and the Doping
 
 N_tot = 2*N_x*N_y
 Doping = 1-n_filling
@@ -36,13 +32,9 @@ else:
     
 
 
-# In[575]:
-
-# In[577]:
-
 
 #We then construct the non-interacting(!) Hamiltonian H_0. In this code, this is done for the 
-#non-interacting part of the Hubbard Hamiltonian on a square lattice with optional periodic boundaries 
+#non-interacting part of the Hubbard Hamiltonian on a honey comb lattice with optional periodic boundaries 
 #and an optional magnetic field.
 #The code can be extended by replacing the matrix H_0 by a different matrix H_0 for a different model, e.g
 #by adding additional next-to nearest neighbor hopping terms to the Hamiltonian. Note that t_prime only enters the
@@ -57,11 +49,11 @@ H_0 = np.zeros([2*N_tot,2*N_tot],dtype = "complex") #This is the form of the Ham
 
 
 QuantumNumbers = []     #We can see this as the labels of the rows and columns of the Hamiltonian.
-                        #We can with this write a single index insead of (x,y,s).
+                        #We can with this write a single index insead of (x,y,v,s).
 
 for i in range(N_y):            #The order of these loops matters, because this way we enumerate the sites
     for j in range(N_x):        #from left to right an THEN from low to up. 
-        for v in [0,1]:     #We label the 4 site in the unit cell
+        for v in [0,1]:         #We label the 2 sites in the unit cell
             for s in (1,-1):    #We label up spins with 1 and down spins with -1.
                 QuantumNumbers.append([j,i,v,s]) 
 
@@ -72,7 +64,6 @@ for i in range(2*N_tot):
         x1,y1,v1,s1 = QuantumNumbers[i] #each index of H_0 corresponds to an x-coordinate, a y-coordinate,  
         x2,y2,v2,s2 = QuantumNumbers[j] #a site in the unit cell and a spin
         
-        #Intra Layer Hoppings:
         
         ####Same Unit Cells:
         
@@ -105,8 +96,7 @@ for i in range(2*N_tot):
                 if(s1 == s2):
                     H_0[i,j]+= -t
                     
-                
-        ####Inter Layer Hopping:  
+
         
                   
                 
@@ -115,7 +105,6 @@ for i in range(2*N_tot):
             
         if(Periodic_Boundaries == True): #implement boundaries
             
-            #for intra layer nearest neighbour hopping
             #Periodic Boundaries in x direction:
             if(x1 == 0 and x2 == N_x-1):
                 if(s1 == s2 and y1 == y2):
@@ -262,32 +251,12 @@ def Next_Gap_Vector(GapVector,GetEnergy=False,ReturnBoth = False,ReturnSpectral 
     return np.real(NewGapVector)
 
 
-##################################################################
 
-
-
-
-#This is a primitive function to plot the spin configuration given a Gapvector.
-#It rotates the spins so that the (0,0) spin points upwards and then plots a cut through the x-y-plane.
-#The arrows point in the direction of the x,y components of the spin, however their length is proportional
-#to the full local spin, not just the x and y component.
-#Since the spins can also have a z-component, this function should be viewed to get a first impression on 
-#how the spins are aranged (in particular, if they ae collinear), not to see the precise pattern.
-
-
-
-# In[568]:
-
-
-
-
-# In[566]:
 
 
 #Here, we finally perform the iteration to let the system converge towards a final order. 
 #We start by initializing the GapVector to a completely random configuration with roughly, 
 #but not necessarily exactly, the right amount of electrons.
-
 
 GapVector = np.append(n_filling*np.random.random(2*N_tot),np.random.random(2*N_tot)-0.5)
 
@@ -298,19 +267,13 @@ mus = []
 Energies = np.array([])
 
 
-#Here we iterate. We stop the iteration process in this example either after 1000 iterations
+#Here we iterate. We stop the iteration process in this example either after 1500 iterations
 #or after none of the Deltas has changed by more than 10^-8. 
 #For higher quality results, especially on bigger lattices, we recommend increasing the 
 #maximum iteration number to e.g. 4000.
 
-#To visualize the iteration process, we additionally plot the inital spin configuration, 
-#the spin configuration after 20 loops and then the spin configuration after every 100 loops.
 for i in range(1500):   
     
-    if(i%20 == 1):  
-        
-        np.save("GapVectors/GapVector_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{:.6}_SingleLayer.npy".format(N_x,N_y,U,n_filling,T),NewGapVector)
-        np.save("Energies/Energies_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{:.6}_SingleLayer.npy".format(N_x,N_y,U,n_filling,T),Energies[-1])
 
 
         
@@ -327,19 +290,10 @@ for i in range(1500):
     GapVector = Mixing*GapVector + (1-Mixing)*NewGapVector
 
 
-# In[569]:
-
-np.save("GapVectors/GapVector_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{:.6}_SingleLayer.npy".format(N_x,N_y,U,n_filling,T),NewGapVector)
-np.save("Energies/Energies_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{:.6}_SingleLayer.npy".format(N_x,N_y,U,n_filling,T),Energies[-1])
-np.save("Energies/mu_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{:.6}_SingleLayer.npy".format(N_x,N_y,U,n_filling,T),mu_new)
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
+#We finish by saving our results for the energy and the Gapvector.
+np.save("GapVector_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{:.6}_SingleLayer.npy".format(N_x,N_y,U,n_filling,T),NewGapVector)
+np.save("Energies_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{:.6}_SingleLayer.npy".format(N_x,N_y,U,n_filling,T),Energies[-1])
+np.save("mu_Nx{}_Ny{}_U{}_Filling{:.8}_Temperature{:.6}_SingleLayer.npy".format(N_x,N_y,U,n_filling,T),mu_new)
 
 
 
